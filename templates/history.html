@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quiz History</title>
+</head>
+<body>
+    <h1>Your Quiz History</h1>
+    <table border="1">
+        <tr>
+            <th>Question</th>
+            <th>Correct?</th>
+        </tr>
+        {% for response in responses %}
+        <tr>
+            <td>{{ response.question }}</td>
+            <td>{{ "Yes" if response.correct else "No" }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <a href="/quiz">Take the Quiz Again</a> | <a href="/logout">Logout</a>
+</body>
+</html>

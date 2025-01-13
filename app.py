@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_admin import Admin, AdminIndexView, expose
+from flask_admin.menu import MenuLink
 from flask_admin.contrib.sqla import ModelView
 from flask_migrate import Migrate
 import datetime
@@ -73,9 +74,11 @@ class MyAdminIndexView(AdminIndexView):
         if not current_user.is_admin:
             return redirect(url_for('home'))
         return super(MyAdminIndexView, self).index()
+ 
 
 # Initialize the admin with the custom index view
 admin = Admin(app, index_view=MyAdminIndexView(), template_mode='bootstrap3')
+admin.add_link(MenuLink(name='Back to Site', url='/'))
 
 class QuizAttemptModelView(AdminModelView):
     column_list = ('id', 'user_id', 'timestamp', 'responses')

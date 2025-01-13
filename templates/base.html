@@ -14,6 +14,9 @@
             <a href="{{ url_for('quiz') }}">Take Quiz</a> |
             <a href="{{ url_for('history') }}">History</a> |
             <a href="{{ url_for('logout') }}">Logout</a>
+            {% if current_user.is_admin %}
+            | <a href="{{ url_for('admin.index') }}">Admin</a>
+            {% endif %}
         {% else %}
             <a href="{{ url_for('login') }}">Login</a> |
             <a href="{{ url_for('register') }}">Register</a>

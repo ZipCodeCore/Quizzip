@@ -2,9 +2,14 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from flask_admin import Admin, AdminIndexView, expose
+from flask_admin.contrib.sqla import ModelView
+from flask_migrate import Migrate
+
 
 app = Flask(__name__)
 app.secret_key = 'quizziprocks'
+#admin = Admin(app, name='Quiz Admin', template_mode='bootstrap3')
 
 # Database Configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///quiz.db'
@@ -15,17 +20,57 @@ bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
+migrate = Migrate(app, db)
+
 # User model
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), nullable=False, unique=True)
     password = db.Column(db.String(150), nullable=False)
+    is_admin = db.Column(db.Boolean, default=False)  # Field to indicate admin status
 
 class Response(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     question = db.Column(db.String(500), nullable=False)
     correct = db.Column(db.Boolean, nullable=False)
+
+class Question(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    text = db.Column(db.String(500), nullable=False)
+    options = db.relationship('Option', backref='question', lazy=True)
+    # Remove the foreign key to Option here
+    correct_option_id = db.Column(db.Integer, nullable=True)  # We'll update this after creating options
+
+class Option(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    text = db.Column(db.String(200), nullable=False)
+    question_id = db.Column(db.Integer, db.ForeignKey('question.id'), nullable=False)
+    is_correct = db.Column(db.Boolean, default=False)  # Add this to mark correct option
+    
+# Custom ModelView to restrict access
+class AdminModelView(ModelView):
+    def is_accessible(self):
+        return current_user.is_authenticated and current_user.is_admin
+
+    def inaccessible_callback(self, name, **kwargs):
+        return redirect(url_for('login', next=request.url))
+
+# Custom AdminIndexView to restrict access to the admin dashboard
+class MyAdminIndexView(AdminIndexView):
+    @expose('/')
+    @login_required
+    def index(self):
+        if not current_user.is_admin:
+            return redirect(url_for('index'))
+        return super(MyAdminIndexView, self).index()
+
+# Initialize the admin with the custom index view
+admin = Admin(app, index_view=MyAdminIndexView(), template_mode='bootstrap3')
+
+# Add views for User and Question models
+admin.add_view(AdminModelView(User, db.session))
+admin.add_view(AdminModelView(Question, db.session))
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -87,14 +132,44 @@ def logout():
     flash("Logged out successfully", "info")
     return redirect(url_for('login'))
 
+
+# @app.route('/quiz')
+# @login_required
+# def quiz():
+#     questions = Question.query.all()
+#     return render_template('quiz.html', questions=questions)
+
 @app.route('/quiz')
 @login_required
 def quiz():
-    return render_template("quiz.html", questions=quiz_data)
+    questions = Question.query.all()
+    app.logger.debug(f"Found {len(questions)} questions")
+    for q in questions:
+        app.logger.debug(f"Question {q.id}: {q.text}")
+        app.logger.debug(f"Options: {[o.text for o in q.options]}")
+    return render_template('quiz.html', questions=questions)
 
-@app.route('/submit', methods=['POST'])
+# Add this debug route to check data
+@app.route('/debug')
+def debug():
+    questions = Question.query.all()
+    output = []
+    for q in questions:
+        q_dict = {
+            'id': q.id,
+            'text': q.text,
+            'options': [{
+                'id': opt.id,
+                'text': opt.text,
+                'is_correct': opt.is_correct
+            } for opt in q.options]
+        }
+        output.append(q_dict)
+    return jsonify(output)
+
+@app.route('/submit1', methods=['POST'])
 @login_required
-def submit():
+def submit1():
     user_answers = request.form
     score = 0
 
@@ -104,11 +179,38 @@ def submit():
 
     return render_template("result.html", score=score, total=len(quiz_data))
 
+@app.route('/submit', methods=['POST'])
+@login_required
+def submit():
+    user_answers = request.form
+    score = 0
+
+    for question in Question.query.all():
+        selected_option_id = user_answers.get(f"question_{question.id}")
+        selected_option = Option.query.get(selected_option_id)
+        is_correct = selected_option and selected_option.id == question.correct_option_id
+
+        response = Response(
+            user_id=current_user.id,
+            question_id=question.id,
+            selected_option_id=selected_option.id if selected_option else None,
+            correct=is_correct
+        )
+        db.session.add(response)
+
+        if is_correct:
+            score += 1
+
+    db.session.commit()
+    flash(f'You scored {score} out of {Question.query.count()}')
+    return redirect(url_for('quiz'))
+
 @app.route('/history')
 @login_required
 def history():
-    responses = Response.query.filter_by(user_id=current_user.id).all()
-    return render_template("history.html", responses=responses)
+    # Retrieve all quiz attempts for the current user
+    quiz_attempts = QuizAttempt.query.filter_by(user_id=current_user.id).order_by(QuizAttempt.timestamp.desc()).all()
+    return render_template("history.html", quiz_attempts=quiz_attempts)
 
 if __name__ == '__main__':
     with app.app_context():

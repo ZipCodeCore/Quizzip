@@ -13,11 +13,11 @@
         <form action="/submit" method="post">
             {% for question in questions %}
                 <div>
-                    <p>{{ loop.index }}. {{ question.question }}</p>
+                    <p>{{ loop.index }}. {{ question.text }}</p>
                     {% for option in question.options %}
                         <label>
                             <input type="radio" name="q{{ loop.index0 }}" value="{{ option }}">
-                            {{ option }}
+                            {{ option.text }}
                         </label><br>
                     {% endfor %}
                 </div>

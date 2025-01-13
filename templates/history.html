@@ -5,18 +5,23 @@
 </head>
 <body>
     <h1>Your Quiz History</h1>
-    <table border="1">
-        <tr>
-            <th>Question</th>
-            <th>Correct?</th>
-        </tr>
-        {% for response in responses %}
-        <tr>
-            <td>{{ response.question }}</td>
-            <td>{{ "Yes" if response.correct else "No" }}</td>
-        </tr>
-        {% endfor %}
-    </table>
+    {% for attempt in quiz_attempts %}
+        <h2>Attempt on {{ attempt.timestamp.strftime("%Y-%m-%d %H:%M:%S") }}</h2>
+        <table border="1">
+            <tr>
+                <th>Question</th>
+                <th>Correct?</th>
+                <th>Answered On</th>
+            </tr>
+            {% for response in attempt.responses %}
+            <tr>
+                <td>{{ response.question }}</td>
+                <td>{{ "Yes" if response.correct else "No" }}</td>
+                <td>{{ response.timestamp.strftime("%Y-%m-%d %H:%M:%S") }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    {% endfor %}
     <a href="/quiz">Take the Quiz Again</a> | <a href="/logout">Logout</a>
 </body>
 </html>

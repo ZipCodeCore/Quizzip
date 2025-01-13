@@ -1,7 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Quiz History</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Programming Skills Quiz</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
     <h1>Your Quiz History</h1>
@@ -11,13 +14,11 @@
             <tr>
                 <th>Question</th>
                 <th>Correct?</th>
-                <th>Answered On</th>
             </tr>
             {% for response in attempt.responses %}
             <tr>
-                <td>{{ response.question }}</td>
+                <td>{{ response.question.text }}</td>
                 <td>{{ "Yes" if response.correct else "No" }}</td>
-                <td>{{ response.timestamp.strftime("%Y-%m-%d %H:%M:%S") }}</td>
             </tr>
             {% endfor %}
         </table>

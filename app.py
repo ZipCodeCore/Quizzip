@@ -1,11 +1,11 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, jsonify, render_template, request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_admin import Admin, AdminIndexView, expose
 from flask_admin.contrib.sqla import ModelView
 from flask_migrate import Migrate
-
+import datetime
 
 app = Flask(__name__)
 app.secret_key = 'quizziprocks'
@@ -29,12 +29,21 @@ class User(db.Model, UserMixin):
     password = db.Column(db.String(150), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)  # Field to indicate admin status
 
+class QuizAttempt(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.datetime.now(datetime.timezone.utc))
+    responses = db.relationship('Response', backref='quiz_attempt', lazy=True)
+
 class Response(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    question = db.Column(db.String(500), nullable=False)
+    quiz_attempt_id = db.Column(db.Integer, db.ForeignKey('quiz_attempt.id'), nullable=False)
+    question_id = db.Column(db.Integer, db.ForeignKey('question.id'), nullable=False)  # Add this
+    selected_option_id = db.Column(db.Integer, db.ForeignKey('option.id'), nullable=False)  # Add this
     correct = db.Column(db.Boolean, nullable=False)
-
+    question = db.relationship('Question', backref='responses', lazy=True)
+    
 class Question(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     text = db.Column(db.String(500), nullable=False)
@@ -182,28 +191,41 @@ def submit1():
 @app.route('/submit', methods=['POST'])
 @login_required
 def submit():
-    user_answers = request.form
+    # Create new quiz attempt
+    quiz_attempt = QuizAttempt(user_id=current_user.id)
+    db.session.add(quiz_attempt)
+    db.session.flush()  # Get ID before committing
+    
+    answers = request.form
+    print("answers", answers)
     score = 0
-
-    for question in Question.query.all():
-        selected_option_id = user_answers.get(f"question_{question.id}")
-        selected_option = Option.query.get(selected_option_id)
-        is_correct = selected_option and selected_option.id == question.correct_option_id
-
-        response = Response(
-            user_id=current_user.id,
-            question_id=question.id,
-            selected_option_id=selected_option.id if selected_option else None,
-            correct=is_correct
-        )
-        db.session.add(response)
-
-        if is_correct:
-            score += 1
-
+    
+    for question_id, selected_option_id in answers.items():
+        if question_id.startswith('q_'):
+            q_id = int(question_id.split('_')[1])
+            opt_id = int(selected_option_id)
+            
+            # Get selected option
+            selected_option = Option.query.get(opt_id)
+            
+            # Create response
+            response = Response(
+                user_id=current_user.id,
+                quiz_attempt_id=quiz_attempt.id,
+                question_id=q_id,
+                selected_option_id=opt_id,
+                correct=selected_option.is_correct
+            )
+            
+            if selected_option.is_correct:
+                score += 1
+            
+            print('resp', response)
+            db.session.add(response)
+    
     db.session.commit()
-    flash(f'You scored {score} out of {Question.query.count()}')
-    return redirect(url_for('quiz'))
+    flash(f'Quiz submitted! Score: {score}', 'success')
+    return redirect(url_for('history'))
 
 @app.route('/history')
 @login_required

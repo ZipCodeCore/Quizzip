@@ -7,9 +7,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
+    {% include 'msgs.html' %}
     <div class="quiz-container">
-        <h1>Welcome to Quizzip</h1>
-        
+        <h1>Quizzip</h1>
+        <a href="/">Home</a>
         <form action="/submit" method="post">
             {% for question in questions %}
                 <div>

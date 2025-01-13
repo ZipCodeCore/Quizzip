@@ -43,7 +43,7 @@ class Response(db.Model):
     selected_option_id = db.Column(db.Integer, db.ForeignKey('option.id'), nullable=False)  # Add this
     correct = db.Column(db.Boolean, nullable=False)
     question = db.relationship('Question', backref='responses', lazy=True)
-    
+
 class Question(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     text = db.Column(db.String(500), nullable=False)
@@ -71,15 +71,33 @@ class MyAdminIndexView(AdminIndexView):
     @login_required
     def index(self):
         if not current_user.is_admin:
-            return redirect(url_for('index'))
+            return redirect(url_for('home'))
         return super(MyAdminIndexView, self).index()
 
 # Initialize the admin with the custom index view
 admin = Admin(app, index_view=MyAdminIndexView(), template_mode='bootstrap3')
 
+class QuizAttemptModelView(AdminModelView):
+    column_list = ('id', 'user_id', 'timestamp', 'responses')
+    column_formatters = {
+        'user': lambda v, c, m, p: m.user.username,
+        'responses': lambda v, c, m, p: len(m.responses)
+    }
+
+class ResponseModelView(AdminModelView):
+    column_list = ('id', 'user_id', 'question', 'selected_option_id', 'correct')
+    column_formatters = {
+        'user': lambda v, c, m, p: m.user.username,
+        'question': lambda v, c, m, p: m.question.text,
+        'selected_option': lambda v, c, m, p: m.selected_option_id.text
+    }
+
 # Add views for User and Question models
 admin.add_view(AdminModelView(User, db.session))
 admin.add_view(AdminModelView(Question, db.session))
+admin.add_view(ResponseModelView(Response, db.session))
+admin.add_view(AdminModelView(Option, db.session))
+admin.add_view(QuizAttemptModelView(QuizAttempt, db.session))
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -127,7 +145,7 @@ def login():
         if user and bcrypt.check_password_hash(user.password, password):
             login_user(user)
             flash("Login successful", "success")
-            return redirect(url_for('quiz'))
+            return redirect(url_for('home'))
         else:
             flash("Invalid username or password", "danger")
             return redirect(url_for('login'))
@@ -139,7 +157,7 @@ def login():
 def logout():
     logout_user()
     flash("Logged out successfully", "info")
-    return redirect(url_for('login'))
+    return redirect(url_for('home'))
 
 
 # @app.route('/quiz')
@@ -175,18 +193,6 @@ def debug():
         }
         output.append(q_dict)
     return jsonify(output)
-
-@app.route('/submit1', methods=['POST'])
-@login_required
-def submit1():
-    user_answers = request.form
-    score = 0
-
-    for i, question in enumerate(quiz_data):
-        if user_answers.get(f"q{i}") == question["answer"]:
-            score += 1
-
-    return render_template("result.html", score=score, total=len(quiz_data))
 
 @app.route('/submit', methods=['POST'])
 @login_required

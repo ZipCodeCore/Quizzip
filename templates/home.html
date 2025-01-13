@@ -4,9 +4,10 @@
 
 {% block content %}
     <h1>Welcome to Quizzip</h1>
-    </h2>Test your Programming Skills</h2>
+    <h2>Test your Programming Skills</h2>
+    <hr/>
     {% if current_user.is_authenticated %}
-        <p>Logged in as {{ current_user.username }}</p>
+        <p><em>Logged in as {{ current_user.username }}</em></p>
     {% else %}
         <a href="/login">Login</a>
     {% endif %}

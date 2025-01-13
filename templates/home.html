@@ -1,20 +1,13 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Programming Skills Quiz</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-</head>
-<body>
-    <h1>Welcome to Quizzip - Test your Programming Skills</h1>
+{% extends "base.html" %}
+
+{% block title %}Quizzip{% endblock %}
+
+{% block content %}
+    <h1>Welcome to Quizzip</h1>
+    </h2>Test your Programming Skills</h2>
     {% if current_user.is_authenticated %}
         <p>Logged in as {{ current_user.username }}</p>
-        <a href="/quiz">Take a Quiz</a> | <a href="/history">View Your History</a> | <a href="/logout">Logout</a>
     {% else %}
         <a href="/login">Login</a>
     {% endif %}
-    {% include 'msgs.html' %}
-</body>
-</html>
-
+{% endblock %}

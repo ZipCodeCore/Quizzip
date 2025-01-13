@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Quizzip - Programming Skills Quiz{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='koley.css') }}">
+</head>
+<body>
+    <img src="{{ url_for('static', filename='zcw.png') }}" width="200" alt="Quizzip Logo">
+    <nav>
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('home') }}">Home</a> |
+            <a href="{{ url_for('quiz') }}">Take Quiz</a> |
+            <a href="{{ url_for('history') }}">History</a> |
+            <a href="{{ url_for('logout') }}">Logout</a>
+        {% else %}
+            <a href="{{ url_for('login') }}">Login</a> |
+            <a href="{{ url_for('register') }}">Register</a>
+        {% endif %}
+    </nav>
+
+    {% include 'msgs.html' %}
+
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+</body>
+</html>

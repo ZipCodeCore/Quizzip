@@ -8,12 +8,12 @@
 <body>
     <h1>Programming Skills Quiz</h1>
     <form action="/submit" method="post">
-        {% for i, question in enumerate(questions) %}
+        {% for question in questions %}
             <div>
-                <p>{{ i + 1 }}. {{ question.question }}</p>
+                <p>{{ loop.index }}. {{ question.question }}</p>
                 {% for option in question.options %}
                     <label>
-                        <input type="radio" name="q{{ i }}" value="{{ option }}">
+                        <input type="radio" name="q{{ loop.index0 }}" value="{{ option }}">
                         {{ option }}
                     </label><br>
                 {% endfor %}

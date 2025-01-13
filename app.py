@@ -4,7 +4,7 @@ from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'
+app.secret_key = 'quizziprocks'
 
 # Database Configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///quiz.db'
@@ -20,6 +20,12 @@ class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), nullable=False, unique=True)
     password = db.Column(db.String(150), nullable=False)
+
+class Response(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    question = db.Column(db.String(500), nullable=False)
+    correct = db.Column(db.Boolean, nullable=False)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -98,8 +104,13 @@ def submit():
 
     return render_template("result.html", score=score, total=len(quiz_data))
 
+@app.route('/history')
+@login_required
+def history():
+    responses = Response.query.filter_by(user_id=current_user.id).all()
+    return render_template("history.html", responses=responses)
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     app.run(debug=True)
-    

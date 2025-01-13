@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Programming Skills Quiz</title>
+</head>
+<body>
+    <h1>Programming Skills Quiz</h1>
+    <form action="/submit" method="post">
+        {% for i, question in enumerate(questions) %}
+            <div>
+                <p>{{ i + 1 }}. {{ question.question }}</p>
+                {% for option in question.options %}
+                    <label>
+                        <input type="radio" name="q{{ i }}" value="{{ option }}">
+                        {{ option }}
+                    </label><br>
+                {% endfor %}
+            </div>
+            <hr>
+        {% endfor %}
+        <button type="submit">Submit</button>
+    </form>
+</body>
+</html>
+

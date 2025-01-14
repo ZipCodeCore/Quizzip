@@ -9,7 +9,7 @@
                     <p>{{ loop.index }}. {{ question.text }}</p>
                     {% for option in question.options %}
                         <label>
-                            <input type="radio" name="q_{{ loop.index }}" value="{{ option.id }}">
+                            <input type="radio" name="q_{{ question.id }}_{{ option.id }}" value="{{ option.id }}">
                             {{ option.text }}
                         </label><br>
                     {% endfor %}

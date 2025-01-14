@@ -4,8 +4,10 @@
 
 {% block content %}
     {% for attempt in quiz_attempts %}
-        <h2>Attempt on {{ attempt.timestamp.strftime("%Y-%m-%d %H:%M:%S") }}</h2>
-        <table border="1">
+    <h2>Attempt on {{ attempt.starttimestamp.strftime("%Y-%m-%d %H:%M:%S") }}</h2>
+    <h3>Attempt on {{ attempt.endtimestamp.strftime("%Y-%m-%d %H:%M:%S") }}</h3>
+    <p>Show the eventual total time taken on quiz...</p>
+    <table border="1">
             <tr>
                 <th>Question</th>
                 <th>Correct?</th>

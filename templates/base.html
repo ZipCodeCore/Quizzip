@@ -10,16 +10,16 @@
     <img src="{{ url_for('static', filename='zcw.png') }}" width="200" alt="Quizzip Logo">
     <nav>
         {% if current_user.is_authenticated %}
-            <a href="{{ url_for('home') }}">Home</a> |
-            <a href="{{ url_for('quiz') }}">Take Quiz</a> |
-            <a href="{{ url_for('history') }}">History</a> |
-            <a href="{{ url_for('logout') }}">Logout</a>
+            <a href="{{ url_for('app.home') }}">Home</a> |
+            <a href="{{ url_for('app.quiz') }}">Take Quiz</a> |
+            <a href="{{ url_for('app.history') }}">History</a> |
+            <a href="{{ url_for('app.logout') }}">Logout</a>
             {% if current_user.is_admin %}
             | <a href="{{ url_for('admin.index') }}">Admin</a>
             {% endif %}
         {% else %}
-            <a href="{{ url_for('login') }}">Login</a> |
-            <a href="{{ url_for('register') }}">Register</a>
+            <a href="{{ url_for('app.login') }}">Login</a> |
+            <a href="{{ url_for('app.register') }}">Register</a>
         {% endif %}
     </nav>
 

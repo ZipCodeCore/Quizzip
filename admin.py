@@ -36,15 +36,29 @@ class QuizAttemptModelView(MyAdminModelView):
     }
 
 class ResponseModelView(MyAdminModelView):
-    column_list = ('id', 'user_id', 'question', 'selected_option_id', 'is_correct')
+    column_list = ('id', 'user_id', 'question', 'selected_option_id')
     column_formatters = {
     #     'user': lambda v, c, m, p: m.user.username,
         'question': lambda v, c, m, p: m.question.text,
     #     'selected_option': lambda v, c, m, p: m.selected_option_id.text
     }
 
+#    admin_bp.add_view(OptionModelView(Option, db.session))
+
+class OptionModelView(MyAdminModelView):
+    column_list = ('id', 'text', 'question_id', 'question', 'is_correct')
+    column_formatters = {
+        'question': lambda v, c, m, p: m.question.text
+    }
+
+class OptionInlineForm(InlineFormAdmin):
+    form_columns = ['id', 'text', 'is_correct']
+
 class OptionViewWithInlineModel(MyAdminModelView):
-    inline_models = [(Option, dict(form_columns=['id', 'text', 'is_correct']))]
+    inline_models = (OptionInlineForm(Option),)
+
+class ResponseInlineForm(InlineFormAdmin):
+    form_columns = ['id', 'selected_option_id', 'correct']
 
 class RespViewWithInlineModel(MyAdminModelView):
-    inline_models = [(Response, dict(form_columns=['id', 'selected_option_id', 'correct']))]
+    inline_models = (ResponseInlineForm(Response),)

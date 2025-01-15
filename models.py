@@ -13,14 +13,14 @@ class User(db.Model, UserMixin):
 class Question(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     text = db.Column(db.String(500), nullable=False)
-    options = db.relationship('Option', backref='question')
+    options = db.relationship('Option', backref='question', lazy = "dynamic")
     correct_option_id = db.Column(db.Integer, nullable=True)
 
 class Option(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     text = db.Column(db.String(200), nullable=False)
     question_id = db.Column(db.Integer, db.ForeignKey('question.id', ondelete="CASCADE"), nullable=False)
-    #question_obj = db.relationship("Question", backref="options", lazy = True)
+    #question = db.relationship("Question", backref="options")
     is_correct = db.Column(db.Boolean, default=False)
 
 class QuizAttempt(db.Model):

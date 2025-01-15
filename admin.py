@@ -50,10 +50,13 @@ class OptionModelView(MyAdminModelView):
     column_formatters = {
         'question': lambda v, c, m, p: m.question.text
     }
+    form_create_rules = ('text', 'is_correct',)
+    form_edit_rules = form_create_rules
 
 class OptionInlineForm(InlineFormAdmin):
-    form_columns = ['id', 'text', 'is_correct']
-
+    form_columns = ['text', 'is_correct']
+    form_edit_rules = ('text', 'is_correct',)
+    
 class OptionViewWithInlineModel(MyAdminModelView):
     inline_models = (OptionInlineForm(Option),)
 

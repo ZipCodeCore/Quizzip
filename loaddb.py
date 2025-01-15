@@ -1,7 +1,8 @@
 
-from app import quiz_data, create_app
+from app import create_app
 from models import Question, Option, User
 from extensions import db
+from questions import quiz_data
 
 def load_questions():
     with app.app_context():

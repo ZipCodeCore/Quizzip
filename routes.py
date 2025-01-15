@@ -65,14 +65,51 @@ def logout():
     return redirect(url_for('app.home'))
 
 
+# @app_bp.route('/quiz')
+# @login_required
+# def quiz():
+#     questions = Question.query.all()
+#     print(f"Found {len(questions)} questions")
+#     for q in questions:
+#         print(f"Question {q.id}: {q.text}")
+#         print(f"Options: {[o.text for o in q.options]}")
+#     return render_template('quiz.html', questions=questions)
+
+from random import sample
+from sqlalchemy import not_, exists
+
 @app_bp.route('/quiz')
 @login_required
 def quiz():
-    questions = Question.query.all()
-    print(f"Found {len(questions)} questions")
-    for q in questions:
-        print(f"Question {q.id}: {q.text}")
-        print(f"Options: {[o.text for o in q.options]}")
+    # Number of questions per quiz
+    QUIZ_SIZE = 5
+
+    # Get questions user hasn't answered correctly
+    unsolved_questions = Question.query.filter(
+        not_(exists().where(
+            (Response.question_id == Question.id) &
+            (Response.user_id == current_user.id) &
+            (Response.correct == True)
+        ))
+    ).all()
+
+    # If we don't have enough unsolved questions, get some random ones
+    if len(unsolved_questions) < QUIZ_SIZE:
+        # Get remaining needed questions
+        solved_questions = Question.query.filter(
+            Question.id.notin_([q.id for q in unsolved_questions])
+        ).all()
+        
+        remaining_needed = QUIZ_SIZE - len(unsolved_questions)
+        if solved_questions:
+            random_solved = sample(solved_questions, min(remaining_needed, len(solved_questions)))
+            questions = unsolved_questions + random_solved
+        else:
+            questions = unsolved_questions
+    else:
+        # Random sample from unsolved questions
+        questions = sample(unsolved_questions, QUIZ_SIZE)
+
     return render_template('quiz.html', questions=questions)
 
 # Add this debug route to check data

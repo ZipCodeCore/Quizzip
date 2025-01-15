@@ -12,6 +12,7 @@ class User(db.Model, UserMixin):
 
 class Question(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    tech = db.Column(db.String(32), nullable=True)
     text = db.Column(db.String(500), nullable=False)
     options = db.relationship('Option', backref='question', lazy = "dynamic")
     correct_option_id = db.Column(db.Integer, nullable=True)

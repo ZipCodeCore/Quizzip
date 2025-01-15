@@ -56,12 +56,15 @@ class OptionModelView(MyAdminModelView):
 class OptionInlineForm(InlineFormAdmin):
     form_columns = ['text', 'is_correct']
     form_edit_rules = ('text', 'is_correct',)
-    
+
 class OptionViewWithInlineModel(MyAdminModelView):
     inline_models = (OptionInlineForm(Option),)
 
 class ResponseInlineForm(InlineFormAdmin):
     form_columns = ['id', 'selected_option_id', 'correct']
+    column_formatters = {
+        'answer': lambda v, c, m, p: m.question.text
+    }
 
 class RespViewWithInlineModel(MyAdminModelView):
     inline_models = (ResponseInlineForm(Response),)

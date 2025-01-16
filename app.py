@@ -3,16 +3,12 @@ from flask import Flask
 import datetime
 from extensions import db, login_manager
 from routes import app_bp
-from admin import OptionViewWithInlineModel
+from admin import OptionModelView, OptionViewWithInlineModel, ResponseModelView
 from flask_admin import Admin
 #migrate = Migrate(app, db)
-from admin import MyAdminIndexView, MyAdminModelView, QuizAttemptModelView, ResponseModelView, RespViewWithInlineModel, OptionModelView, OptionViewWithInlineModel
+from admin import MyAdminIndexView, MyAdminModelView, RespViewWithInlineModel, OptionViewWithInlineModel
 from flask_admin import Admin
 from flask_admin.menu import MenuLink
-from flask_admin.contrib.sqla import ModelView
-#from flask_admin.form import rules
-#from flask_admin.model.form import InlineFormAdmin
-#from flask_login import current_user, login_required
 from extensions import db
 from models import User, Question, Option, QuizAttempt, Response
 
@@ -33,19 +29,11 @@ def create_app(config_object='settings'):
 
     # Update admin views
     # Add views for User and Question models
-    admin_bp.add_view(ModelView(User, db.session))
-    admin_bp.add_view(ModelView(Question, db.session))
-    admin_bp.add_view(ModelView(Option, db.session))
-    admin_bp.add_view(ModelView(Response, db.session))
-    admin_bp.add_view(ModelView(QuizAttempt, db.session))
-    #admin_bp.add_view(ResponseModelView(Response, db.session))
-    #admin_bp.add_view(OptionModelView(Option, db.session))
-    #admin_bp.add_view(ModelView(Response, db.session))
-    # can only register one view per Entity
-    # admin_bp.add_view(QuizAttemptModelView(QuizAttempt, db.session))
-    #admin_bp.add_view(RespViewWithInlineModel(QuizAttempt, db.session))
-
-    #admin_bp.add_view(OptionViewWithInlineModel(Question, db.session))
+    admin_bp.add_view(MyAdminModelView(User, db.session))
+    admin_bp.add_view(OptionViewWithInlineModel(Question, db.session))
+    admin_bp.add_view(RespViewWithInlineModel(QuizAttempt, db.session))
+    admin_bp.add_view(OptionModelView(Option, db.session))
+    admin_bp.add_view(ResponseModelView(Response, db.session))
 
     register_extensions(app)
     app.register_blueprint(app_bp)

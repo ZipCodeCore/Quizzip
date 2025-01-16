@@ -61,7 +61,7 @@ class OptionViewWithInlineModel(MyAdminModelView):
     inline_models = (OptionInlineForm(Option),)
 
 class ResponseInlineForm(InlineFormAdmin):
-    form_columns = ['id', 'selected_option_id', 'correct']
+    form_columns = ['id', 'question', 'selected_option_id', 'correct']
     column_formatters = {
         'answer': lambda v, c, m, p: m.question.text
     }

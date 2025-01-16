@@ -28,20 +28,24 @@ def create_app(config_object='settings'):
     #app.config['SQLALCHEMY_ECHO'] = True
 
 
-    admin_bp = Admin(app, index_view=MyAdminIndexView(), template_mode='bootstrap3')
+    admin_bp = Admin(app, index_view=MyAdminIndexView())
     admin_bp.add_link(MenuLink(name='Back to Site', url='/'))
 
     # Update admin views
     # Add views for User and Question models
-    admin_bp.add_view(MyAdminModelView(User, db.session))
-    admin_bp.add_view(ResponseModelView(Response, db.session))
-    admin_bp.add_view(OptionModelView(Option, db.session))
+    admin_bp.add_view(ModelView(User, db.session))
+    admin_bp.add_view(ModelView(Question, db.session))
+    admin_bp.add_view(ModelView(Option, db.session))
+    admin_bp.add_view(ModelView(Response, db.session))
+    admin_bp.add_view(ModelView(QuizAttempt, db.session))
+    #admin_bp.add_view(ResponseModelView(Response, db.session))
+    #admin_bp.add_view(OptionModelView(Option, db.session))
     #admin_bp.add_view(ModelView(Response, db.session))
     # can only register one view per Entity
     # admin_bp.add_view(QuizAttemptModelView(QuizAttempt, db.session))
-    admin_bp.add_view(RespViewWithInlineModel(QuizAttempt, db.session))
+    #admin_bp.add_view(RespViewWithInlineModel(QuizAttempt, db.session))
 
-    admin_bp.add_view(OptionViewWithInlineModel(Question, db.session))
+    #admin_bp.add_view(OptionViewWithInlineModel(Question, db.session))
 
     register_extensions(app)
     app.register_blueprint(app_bp)

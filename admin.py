@@ -37,7 +37,7 @@ class ResponseModelView(MyAdminModelView):
     column_formatters = {'question': lambda v, c, m, p: m.question.text}
     
 class OptionViewWithInlineModel(MyAdminModelView):
-    column_list = ('id', 'text', 'is_correct')
+    column_list = ('id', 'tech', 'text', 'is_correct')
     column_formatters = {'question': lambda v, c, m, p: m.question.text}
     inline_models = (Option,)
 

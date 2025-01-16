@@ -10,6 +10,23 @@ class User(db.Model, UserMixin):
     password = db.Column(db.String(150), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
 
+    def get_quiz_count(self):
+        return QuizAttempt.query.filter_by(user_id=self.id).count()
+    
+    def get_correct_percentage(self):
+        total_responses = Response.query.filter_by(user_id=self.id).count()
+        if total_responses == 0:
+            return 0
+        correct_responses = Response.query.filter_by(user_id=self.id, correct=True).count()
+        return round((correct_responses / total_responses) * 100, 1)
+    
+    def get_total_answered(self):
+        return Response.query.filter_by(user_id=self.id).count()
+    
+    @staticmethod
+    def get_total_questions():
+        return Question.query.count()
+        
 class Question(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     tech = db.Column(db.String(32), nullable=True)

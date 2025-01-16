@@ -19,7 +19,20 @@ def load_user(user_id):
 
 @app_bp.route('/')
 def home():
-    return render_template("home.html")
+    stats = {
+        'quiz_count': 0,
+        'correct_percentage': 0,
+        'total_answered': 0,
+        'total_questions': User.get_total_questions()
+    }
+    
+    if current_user.is_authenticated:
+        stats.update({
+            'quiz_count': current_user.get_quiz_count(),
+            'correct_percentage': current_user.get_correct_percentage(),
+            'total_answered': current_user.get_total_answered()
+        })
+    return render_template("home.html", **stats)
 
 @app_bp.route('/register', methods=['GET', 'POST'])
 def register():

@@ -1,21 +1,30 @@
-{% extends "base.html" %}
-
-{% block title %}Take Quiz{% endblock %}
-
-{% block content %}
-        <form action="/submit" method="post">
-            {% for question in questions %}
-                <div>
-                    <p>{{ loop.index }}. {{ question.text }}</p>
-                    {% for option in question.options %}
-                        <label>
-                            <input type="radio" name="q_{{ question.id }}_{{ option.id }}" value="{{ option.id }}">
-                            {{ option.text }}
-                        </label><br>
-                    {% endfor %}
-                </div>
-                <hr>
+{% extends "base.html" %} {% block title %}Take Quiz{% endblock %} {% block
+content %}
+<div class="container mt-5">
+    {% if selected_topic %}
+    <h2>Quiz - {{ selected_topic }}</h2>
+    {% else %}
+    <h2>Quiz</h2>
+    <hr />
+    {% endif %}
+    <form action="/submit" method="post">
+        {% for question in questions %}
+        <div>
+            <p>{{ loop.index }}. {{ question.text }}</p>
+            {% for option in question.options %}
+            <label>
+                <input
+                    type="radio"
+                    name="q_{{ question.id }}_{{ option.id }}"
+                    value="{{ option.id }}"
+                />
+                {{ option.text }} </label
+            ><br />
             {% endfor %}
-            <button type="submit">Submit Answers</button>
-        </form>
+        </div>
+        <hr />
+        {% endfor %}
+        <button type="submit">Submit Answers</button>
+    </form>
+</div>
 {% endblock %}

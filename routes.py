@@ -25,7 +25,7 @@ def home():
         'total_answered': 0,
         'total_questions': User.get_total_questions()
     }
-    
+
     if current_user.is_authenticated:
         stats.update({
             'quiz_count': current_user.get_quiz_count(),
@@ -50,7 +50,7 @@ def register():
         db.session.commit()
         flash("Registration successful. Please log in.", "success")
         return redirect(url_for('app.login'))
-    
+
     return render_template("register.html")
 
 @app_bp.route('/login', methods=['GET', 'POST'])
@@ -91,14 +91,35 @@ def logout():
 from random import sample
 from sqlalchemy import not_, exists
 
+# Add this new route in routes.py
+@app_bp.route('/select-topic', methods=['GET', 'POST'])
+@login_required
+def select_topic():
+    # Get unique topics from questions
+    topics = db.session.query(Question.tech).distinct().all()
+    print("topics:", topics)
+    topics = [topic[0] for topic in topics]  # Convert from tuples to list
+
+    if request.method == 'POST':
+        selected_topic = request.form.get('topic')
+        return redirect(url_for('app.quiz', topic=selected_topic))
+
+    return render_template('select_topic.html', topics=topics)
+
+
 @app_bp.route('/quiz')
 @login_required
 def quiz():
-    # Number of questions per quiz
     QUIZ_SIZE = 5
+    selected_topic = request.args.get('topic')
 
-    # Get questions user hasn't answered correctly
-    unsolved_questions = Question.query.filter(
+    # Base query with topic filter if specified
+    base_query = Question.query
+    if selected_topic:
+        base_query = base_query.filter(Question.tech == selected_topic)
+
+    # Get questions user hasn't answered correctly for the selected topic
+    unsolved_questions = base_query.filter(
         not_(exists().where(
             (Response.question_id == Question.id) &
             (Response.user_id == current_user.id) &
@@ -106,13 +127,13 @@ def quiz():
         ))
     ).all()
 
-    # If we don't have enough unsolved questions, get some random ones
+    # If we don't have enough unsolved questions, get some random ones from the same topic
     if len(unsolved_questions) < QUIZ_SIZE:
-        # Get remaining needed questions
-        solved_questions = Question.query.filter(
+        # Get remaining needed questions from the same topic
+        solved_questions = base_query.filter(
             Question.id.notin_([q.id for q in unsolved_questions])
         ).all()
-        
+
         remaining_needed = QUIZ_SIZE - len(unsolved_questions)
         if solved_questions:
             random_solved = sample(solved_questions, min(remaining_needed, len(solved_questions)))
@@ -121,9 +142,47 @@ def quiz():
             questions = unsolved_questions
     else:
         # Random sample from unsolved questions
-        questions = sample(unsolved_questions, QUIZ_SIZE)
+        questions = sample(unsolved_questions, min(QUIZ_SIZE, len(unsolved_questions)))
 
-    return render_template('quiz.html', questions=questions)
+    if not questions:
+        flash("No questions available for the selected topic", "warning")
+        return redirect(url_for('app.select_topic'))
+
+    return render_template('quiz.html', questions=questions, selected_topic=selected_topic)
+
+# @app_bp.route('/quiz')
+# @login_required
+# def quiz():
+#     # Number of questions per quiz
+#     QUIZ_SIZE = 5
+
+#     # Get questions user hasn't answered correctly
+#     unsolved_questions = Question.query.filter(
+#         not_(exists().where(
+#             (Response.question_id == Question.id) &
+#             (Response.user_id == current_user.id) &
+#             (Response.correct == True)
+#         ))
+#     ).all()
+
+#     # If we don't have enough unsolved questions, get some random ones
+#     if len(unsolved_questions) < QUIZ_SIZE:
+#         # Get remaining needed questions
+#         solved_questions = Question.query.filter(
+#             Question.id.notin_([q.id for q in unsolved_questions])
+#         ).all()
+
+#         remaining_needed = QUIZ_SIZE - len(unsolved_questions)
+#         if solved_questions:
+#             random_solved = sample(solved_questions, min(remaining_needed, len(solved_questions)))
+#             questions = unsolved_questions + random_solved
+#         else:
+#             questions = unsolved_questions
+#     else:
+#         # Random sample from unsolved questions
+#         questions = sample(unsolved_questions, QUIZ_SIZE)
+
+#     return render_template('quiz.html', questions=questions)
 
 # Add this debug route to check data
 @app_bp.route('/debug')
@@ -151,19 +210,19 @@ def submit():
     quiz_attempt.starttimestamp = datetime.datetime.now()
     db.session.add(quiz_attempt)
     db.session.flush()  # Get ID before committing
-    
+
     answers = request.form
     print("answers", answers)
     score = 0
-    
+
     for question_id, selected_option_id in answers.items():
         if question_id.startswith('q_'):
             q_id = int(question_id.split('_')[1])
             opt_id = int(selected_option_id)
-            
+
             # Get selected option
             selected_option = Option.query.get(opt_id)
-            
+
             # Create response
             response = Response(
                 user_id=current_user.id,
@@ -172,13 +231,13 @@ def submit():
                 selected_option_id=opt_id,
                 correct=selected_option.is_correct
             )
-            
+
             if selected_option.is_correct:
                 score += 1
-            
+
             print('resp', response)
             db.session.add(response)
-    
+
     db.session.commit()
     flash(f'Quiz submitted! Score: {score}', 'success')
     return redirect(url_for('app.history'))
@@ -189,4 +248,3 @@ def history():
     # Retrieve all quiz attempts for the current user
     quiz_attempts = QuizAttempt.query.filter_by(user_id=current_user.id).order_by(QuizAttempt.endtimestamp.desc()).all()
     return render_template("history.html", quiz_attempts=quiz_attempts)
-

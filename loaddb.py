@@ -16,6 +16,13 @@ def load_questions():
         for item in quiz_data:
             # Create question
             question = Question(text=item["question"])
+            if"tech" not in item:
+                   print(f"Tech key missing for {item['question']}")
+                   item["tech"] = None
+                   break
+            if item["tech"] == None:
+                print(f"Tech is None for {item['question']}")
+            question.tech = item["tech"]
             question.correct_option_id=1
             db.session.add(question)
             db.session.flush()  # To get the question ID
@@ -53,7 +60,7 @@ def load_admin():
         )
         db.session.add(admin)
         db.session.commit()
-    
+
 if __name__ == "__main__":
     app = create_app()
     with app.app_context():

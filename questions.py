@@ -328,9 +328,9 @@ quiz_data = [
      "options": ["1000 by default", "100 by default", "Unlimited", "System dependent"],
      "answer": "1000 by default", "tech": "python"},
 
-    {"question": "Purpose of `__call__`?",
+    {"question": "Purpose of __call__?",
      "options": ["Make object callable", "Create function", "Delete function", "Rename function"],
-     "answer": "Make object callable"}
+     "answer": "Make object callable", "tech": "python"}
 ]
 
 # quiz_data2 = [{**q, "tech": "python"} for q in quiz_data]

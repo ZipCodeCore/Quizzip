@@ -1,0 +1,19 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mt-5">
+    <h2>Select Quiz Topic</h2>
+
+    <form method="POST" class="mt-4">
+        <div class="form-group">
+            <label for="topic">Choose a topic:</label>
+            <select class="form-control" id="topic" name="topic" required>
+                <option value="">Select a topic...</option>
+                {% for topic in topics %}
+                <option value="{{ topic }}">{{ topic }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary mt-3">Start Quiz</button>
+    </form>
+</div>
+{% endblock %}

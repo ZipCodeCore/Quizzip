@@ -1,5 +1,6 @@
 import datetime
 from flask import jsonify, render_template, request, redirect, url_for, flash
+from flask import session
 from flask_login import login_user, login_required, logout_user, current_user
 from extensions import db, bcrypt, login_manager
 
@@ -106,49 +107,168 @@ def select_topic():
 
     return render_template('select_topic.html', topics=topics)
 
-
 @app_bp.route('/quiz')
 @login_required
 def quiz():
-    QUIZ_SIZE = 5
+    QUESTIONS_PER_PAGE = 4
+    page = request.args.get('page', 1, type=int)
     selected_topic = request.args.get('topic')
 
-    # Base query with topic filter if specified
-    base_query = Question.query
-    if selected_topic:
-        base_query = base_query.filter(Question.tech == selected_topic)
+    # Initialize or get quiz questions from session
+    if 'quiz_questions' not in session or request.args.get('new_quiz'):
+        # Your existing question selection logic here
+        base_query = Question.query
+        if selected_topic:
+            base_query = base_query.filter(Question.tech == selected_topic)
 
-    # Get questions user hasn't answered correctly for the selected topic
-    unsolved_questions = base_query.filter(
-        not_(exists().where(
-            (Response.question_id == Question.id) &
-            (Response.user_id == current_user.id) &
-            (Response.correct == True)
-        ))
-    ).all()
-
-    # If we don't have enough unsolved questions, get some random ones from the same topic
-    if len(unsolved_questions) < QUIZ_SIZE:
-        # Get remaining needed questions from the same topic
-        solved_questions = base_query.filter(
-            Question.id.notin_([q.id for q in unsolved_questions])
+        unsolved_questions = base_query.filter(
+            not_(exists().where(
+                (Response.question_id == Question.id) &
+                (Response.user_id == current_user.id) &
+                (Response.correct == True)
+            ))
         ).all()
 
-        remaining_needed = QUIZ_SIZE - len(unsolved_questions)
-        if solved_questions:
-            random_solved = sample(solved_questions, min(remaining_needed, len(solved_questions)))
-            questions = unsolved_questions + random_solved
-        else:
-            questions = unsolved_questions
-    else:
-        # Random sample from unsolved questions
-        questions = sample(unsolved_questions, min(QUIZ_SIZE, len(unsolved_questions)))
+        if len(unsolved_questions) < 12:  # Need 12 questions total
+            solved_questions = base_query.filter(
+                Question.id.notin_([q.id for q in unsolved_questions])
+            ).all()
 
-    if not questions:
-        flash("No questions available for the selected topic", "warning")
+            remaining_needed = 12 - len(unsolved_questions)
+            if solved_questions:
+                random_solved = sample(solved_questions, min(remaining_needed, len(solved_questions)))
+                questions = unsolved_questions + random_solved
+            else:
+                questions = unsolved_questions
+        else:
+            questions = sample(unsolved_questions, 12)
+
+        # Store question IDs in session
+        session['quiz_questions'] = [q.id for q in questions]
+        session['quiz_answers'] = {}  # Initialize empty answers dict
+
+    # Get questions for current page
+    question_ids = session['quiz_questions']
+    start_idx = (page - 1) * QUESTIONS_PER_PAGE
+    end_idx = start_idx + QUESTIONS_PER_PAGE
+    current_question_ids = question_ids[start_idx:end_idx]
+
+    questions = Question.query.filter(Question.id.in_(current_question_ids)).all()
+    total_pages = (len(question_ids) + QUESTIONS_PER_PAGE - 1) // QUESTIONS_PER_PAGE
+
+    return render_template('quiz.html',
+                         questions=questions,
+                         selected_topic=selected_topic,
+                         current_page=page,
+                         total_pages=total_pages,
+                         saved_answers=session.get('quiz_answers', {}))
+
+@app_bp.route('/save-answers', methods=['POST'])
+@login_required
+def save_answers():
+    # Save answers to session
+    answers = request.form
+    current_answers = session.get('quiz_answers', {})
+
+    for key, value in answers.items():
+        if key.startswith('q_'):
+            current_answers[key] = value
+
+    session['quiz_answers'] = current_answers
+
+    # Determine where to go next
+    next_page = request.form.get('next_page', type=int)
+    if next_page:
+        return redirect(url_for('app.quiz', page=next_page))
+    return redirect(url_for('app.quiz', page=1))
+
+@app_bp.route('/submit', methods=['POST'])
+@login_required
+def submit():
+    if 'quiz_questions' not in session:
+        flash('No quiz in progress', 'error')
         return redirect(url_for('app.select_topic'))
 
-    return render_template('quiz.html', questions=questions, selected_topic=selected_topic)
+    # Create new quiz attempt
+    quiz_attempt = QuizAttempt(user_id=current_user.id)
+    quiz_attempt.starttimestamp = datetime.datetime.now()
+    db.session.add(quiz_attempt)
+    db.session.flush()
+
+    answers = session.get('quiz_answers', {})
+    score = 0
+
+    for question_key, selected_option_id in answers.items():
+        if question_key.startswith('q_'):
+            q_id = int(question_key.split('_')[1])
+            opt_id = int(selected_option_id)
+
+            selected_option = Option.query.get(opt_id)
+
+            response = Response(
+                user_id=current_user.id,
+                quiz_attempt_id=quiz_attempt.id,
+                question_id=q_id,
+                selected_option_id=opt_id,
+                correct=selected_option.is_correct
+            )
+
+            if selected_option.is_correct:
+                score += 1
+
+            db.session.add(response)
+
+    db.session.commit()
+
+    # Clear quiz session data
+    session.pop('quiz_questions', None)
+    session.pop('quiz_answers', None)
+
+    flash(f'Quiz submitted! Score: {score}', 'success')
+    return redirect(url_for('app.history'))
+
+# @app_bp.route('/quiz')
+# @login_required
+# def quiz():
+#     QUIZ_SIZE = 5
+#     selected_topic = request.args.get('topic')
+
+#     # Base query with topic filter if specified
+#     base_query = Question.query
+#     if selected_topic:
+#         base_query = base_query.filter(Question.tech == selected_topic)
+
+#     # Get questions user hasn't answered correctly for the selected topic
+#     unsolved_questions = base_query.filter(
+#         not_(exists().where(
+#             (Response.question_id == Question.id) &
+#             (Response.user_id == current_user.id) &
+#             (Response.correct == True)
+#         ))
+#     ).all()
+
+#     # If we don't have enough unsolved questions, get some random ones from the same topic
+#     if len(unsolved_questions) < QUIZ_SIZE:
+#         # Get remaining needed questions from the same topic
+#         solved_questions = base_query.filter(
+#             Question.id.notin_([q.id for q in unsolved_questions])
+#         ).all()
+
+#         remaining_needed = QUIZ_SIZE - len(unsolved_questions)
+#         if solved_questions:
+#             random_solved = sample(solved_questions, min(remaining_needed, len(solved_questions)))
+#             questions = unsolved_questions + random_solved
+#         else:
+#             questions = unsolved_questions
+#     else:
+#         # Random sample from unsolved questions
+#         questions = sample(unsolved_questions, min(QUIZ_SIZE, len(unsolved_questions)))
+
+#     if not questions:
+#         flash("No questions available for the selected topic", "warning")
+#         return redirect(url_for('app.select_topic'))
+
+#     return render_template('quiz.html', questions=questions, selected_topic=selected_topic)
 
 # @app_bp.route('/quiz')
 # @login_required
@@ -202,45 +322,45 @@ def debug():
         output.append(q_dict)
     return jsonify(output)
 
-@app_bp.route('/submit', methods=['POST'])
-@login_required
-def submit():
-    # Create new quiz attempt
-    quiz_attempt = QuizAttempt(user_id=current_user.id)
-    quiz_attempt.starttimestamp = datetime.datetime.now()
-    db.session.add(quiz_attempt)
-    db.session.flush()  # Get ID before committing
+# @app_bp.route('/submit', methods=['POST'])
+# @login_required
+# def submit():
+#     # Create new quiz attempt
+#     quiz_attempt = QuizAttempt(user_id=current_user.id)
+#     quiz_attempt.starttimestamp = datetime.datetime.now()
+#     db.session.add(quiz_attempt)
+#     db.session.flush()  # Get ID before committing
 
-    answers = request.form
-    print("answers", answers)
-    score = 0
+#     answers = request.form
+#     print("answers", answers)
+#     score = 0
 
-    for question_id, selected_option_id in answers.items():
-        if question_id.startswith('q_'):
-            q_id = int(question_id.split('_')[1])
-            opt_id = int(selected_option_id)
+#     for question_id, selected_option_id in answers.items():
+#         if question_id.startswith('q_'):
+#             q_id = int(question_id.split('_')[1])
+#             opt_id = int(selected_option_id)
 
-            # Get selected option
-            selected_option = Option.query.get(opt_id)
+#             # Get selected option
+#             selected_option = Option.query.get(opt_id)
 
-            # Create response
-            response = Response(
-                user_id=current_user.id,
-                quiz_attempt_id=quiz_attempt.id,
-                question_id=q_id,
-                selected_option_id=opt_id,
-                correct=selected_option.is_correct
-            )
+#             # Create response
+#             response = Response(
+#                 user_id=current_user.id,
+#                 quiz_attempt_id=quiz_attempt.id,
+#                 question_id=q_id,
+#                 selected_option_id=opt_id,
+#                 correct=selected_option.is_correct
+#             )
 
-            if selected_option.is_correct:
-                score += 1
+#             if selected_option.is_correct:
+#                 score += 1
 
-            print('resp', response)
-            db.session.add(response)
+#             print('resp', response)
+#             db.session.add(response)
 
-    db.session.commit()
-    flash(f'Quiz submitted! Score: {score}', 'success')
-    return redirect(url_for('app.history'))
+#     db.session.commit()
+#     flash(f'Quiz submitted! Score: {score}', 'success')
+#     return redirect(url_for('app.history'))
 
 @app_bp.route('/history')
 @login_required

@@ -3,7 +3,7 @@
 {% block title %}Login to Quizzip{% endblock %}
 
 {% block content %}
-    <form method="POST" action="{{ url_for('login') }}">
+    <form method="POST" action="{{ url_for('app.login') }}">
         <div class="form-group">
             <label for="username">Username:</label>
             <input type="text" id="username" name="username" required>

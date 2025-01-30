@@ -20,5 +20,5 @@
             {% endfor %}
         </table>
     {% endfor %}
-    <a href="/quiz">Take a Quiz!</a> | <a href="/logout">Logout</a>
+    <a href="{{ url_for('app.select_topic') }}">Take a Quiz!</a> | <a href="/logout">Logout</a>
 {% endblock %}

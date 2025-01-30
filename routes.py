@@ -64,12 +64,12 @@ def login():
         if user and bcrypt.check_password_hash(user.password, password):
             login_user(user)
             flash("Login successful", "success")
-            return redirect(url_for('home'))
+            return redirect(url_for('app.home'))
         else:
             flash("Invalid username or password", "danger")
-            return redirect(url_for('login'))
+            return redirect(url_for('app.login'))
 
-    return render_template("login.html")
+    return render_template('login.html')
 
 @app_bp.route('/logout')
 @login_required
@@ -163,6 +163,8 @@ def quiz():
                          total_pages=total_pages,
                          saved_answers=session.get('quiz_answers', {}))
 
+import logging
+
 @app_bp.route('/save-answers', methods=['POST'])
 @login_required
 def save_answers():
@@ -175,6 +177,9 @@ def save_answers():
             current_answers[key] = value
 
     session['quiz_answers'] = current_answers
+
+    # Log the current session data
+    logging.debug(f"Current quiz answers: {session['quiz_answers']}")
 
     # Determine where to go next
     next_page = request.form.get('next_page', type=int)
@@ -191,11 +196,12 @@ def submit():
 
     # Create new quiz attempt
     quiz_attempt = QuizAttempt(user_id=current_user.id)
-    quiz_attempt.starttimestamp = datetime.datetime.now()
+    quiz_attempt.endtimestamp = datetime.datetime.now()
     db.session.add(quiz_attempt)
     db.session.flush()
 
     answers = session.get('quiz_answers', {})
+    print("answers #", len(answers))
     score = 0
 
     for question_key, selected_option_id in answers.items():
@@ -226,83 +232,6 @@ def submit():
 
     flash(f'Quiz submitted! Score: {score}', 'success')
     return redirect(url_for('app.history'))
-
-# @app_bp.route('/quiz')
-# @login_required
-# def quiz():
-#     QUIZ_SIZE = 5
-#     selected_topic = request.args.get('topic')
-
-#     # Base query with topic filter if specified
-#     base_query = Question.query
-#     if selected_topic:
-#         base_query = base_query.filter(Question.tech == selected_topic)
-
-#     # Get questions user hasn't answered correctly for the selected topic
-#     unsolved_questions = base_query.filter(
-#         not_(exists().where(
-#             (Response.question_id == Question.id) &
-#             (Response.user_id == current_user.id) &
-#             (Response.correct == True)
-#         ))
-#     ).all()
-
-#     # If we don't have enough unsolved questions, get some random ones from the same topic
-#     if len(unsolved_questions) < QUIZ_SIZE:
-#         # Get remaining needed questions from the same topic
-#         solved_questions = base_query.filter(
-#             Question.id.notin_([q.id for q in unsolved_questions])
-#         ).all()
-
-#         remaining_needed = QUIZ_SIZE - len(unsolved_questions)
-#         if solved_questions:
-#             random_solved = sample(solved_questions, min(remaining_needed, len(solved_questions)))
-#             questions = unsolved_questions + random_solved
-#         else:
-#             questions = unsolved_questions
-#     else:
-#         # Random sample from unsolved questions
-#         questions = sample(unsolved_questions, min(QUIZ_SIZE, len(unsolved_questions)))
-
-#     if not questions:
-#         flash("No questions available for the selected topic", "warning")
-#         return redirect(url_for('app.select_topic'))
-
-#     return render_template('quiz.html', questions=questions, selected_topic=selected_topic)
-
-# @app_bp.route('/quiz')
-# @login_required
-# def quiz():
-#     # Number of questions per quiz
-#     QUIZ_SIZE = 5
-
-#     # Get questions user hasn't answered correctly
-#     unsolved_questions = Question.query.filter(
-#         not_(exists().where(
-#             (Response.question_id == Question.id) &
-#             (Response.user_id == current_user.id) &
-#             (Response.correct == True)
-#         ))
-#     ).all()
-
-#     # If we don't have enough unsolved questions, get some random ones
-#     if len(unsolved_questions) < QUIZ_SIZE:
-#         # Get remaining needed questions
-#         solved_questions = Question.query.filter(
-#             Question.id.notin_([q.id for q in unsolved_questions])
-#         ).all()
-
-#         remaining_needed = QUIZ_SIZE - len(unsolved_questions)
-#         if solved_questions:
-#             random_solved = sample(solved_questions, min(remaining_needed, len(solved_questions)))
-#             questions = unsolved_questions + random_solved
-#         else:
-#             questions = unsolved_questions
-#     else:
-#         # Random sample from unsolved questions
-#         questions = sample(unsolved_questions, QUIZ_SIZE)
-
-#     return render_template('quiz.html', questions=questions)
 
 # Add this debug route to check data
 @app_bp.route('/debug')

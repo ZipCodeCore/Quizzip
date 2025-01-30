@@ -1,3 +1,4 @@
+
 {% extends "base.html" %}
 
 {% block title %}Your Quiz History{% endblock %}
@@ -8,17 +9,24 @@
     <h3>Attempt on {{ attempt.endtimestamp.strftime("%Y-%m-%d %H:%M:%S") }}</h3>
     <p>Show the eventual total time taken on quiz...</p>
     <table border="1">
-            <tr>
-                <th>Question</th>
-                <th>Correct?</th>
-            </tr>
-            {% for response in attempt.responses %}
-            <tr>
-                <td>{{ response.question.text }}</td>
-                <td>{{ "Yes" if response.correct else "No" }}</td>
-            </tr>
-            {% endfor %}
-        </table>
+        <tr>
+            <th>Question</th>
+            <th>Correct?</th>
+        </tr>
+        {% set ns = namespace(correct_count = 0) %}
+        {% for response in attempt.responses %}
+        <tr>
+            <td>{{ response.question.text }}</td>
+            <td>
+                {{ "Correct" if response.correct else "Wrong" }}
+                {% if response.correct %}
+                    {% set ns.correct_count = ns.correct_count + 1 %}
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    <p>Number of correct answers: {{ ns.correct_count }} of 12 ({{"{:.2f}%".format(ns.correct_count / 12 * 100) }})</p>
     {% endfor %}
     <a href="{{ url_for('app.select_topic') }}">Take a Quiz!</a> | <a href="/logout">Logout</a>
 {% endblock %}

@@ -28,8 +28,7 @@
         {% for question in questions %}
         <div class="card mb-4">
             <div class="card-body">
-                <h5 class="card-title">Question {{ loop.index + (current_page-1)*4 }}</h5>
-                <p class="card-text">Category: {{ question.tech }}</p>
+                <h5 class="card-title">Question {{ loop.index + (current_page-1)*4 }} <small>({{ question.tech }})</small></h5>
                 <p class="card-text">{{ question.text }}</p>
 
                 {% for option in question.options %}

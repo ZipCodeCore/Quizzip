@@ -107,6 +107,9 @@ def select_topic():
 
     return render_template('select_topic.html', topics=topics)
 
+# this has a subtle bug: the last page on answers wasn't being saved
+# so I hacked the paging so that it goes one page beyond the last page
+# and then redirects to the history page after submitting
 @app_bp.route('/quiz')
 @login_required
 def quiz():

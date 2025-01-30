@@ -5,9 +5,12 @@
 
 {% block content %}
     {% for attempt in quiz_attempts %}
-    <h2>Attempt on {{ attempt.starttimestamp.strftime("%Y-%m-%d %H:%M:%S") }}</h2>
-    <h3>Attempt on {{ attempt.endtimestamp.strftime("%Y-%m-%d %H:%M:%S") }}</h3>
-    <p>Show the eventual total time taken on quiz...</p>
+    <h2>Quiz on {{ attempt.starttimestamp.strftime("%Y-%m-%d %H:%M:%S") }} ({{ attempt.tech }})</h2>
+    <p>Total time taken on quiz: 
+        {% with delta=attempt.endtimestamp - attempt.starttimestamp %}
+           {{ (delta.seconds // 60) % 60 }} minutes, {{ delta.seconds % 60 }} seconds
+        {% endwith %}
+    </p>
     <table border="1">
         <tr>
             <th>Question</th>

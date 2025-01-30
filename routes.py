@@ -78,17 +78,6 @@ def logout():
     flash("Logged out successfully", "info")
     return redirect(url_for('app.home'))
 
-
-# @app_bp.route('/quiz')
-# @login_required
-# def quiz():
-#     questions = Question.query.all()
-#     print(f"Found {len(questions)} questions")
-#     for q in questions:
-#         print(f"Question {q.id}: {q.text}")
-#         print(f"Options: {[o.text for o in q.options]}")
-#     return render_template('quiz.html', questions=questions)
-
 from random import sample
 from sqlalchemy import not_, exists
 
@@ -102,7 +91,18 @@ def select_topic():
     topics = [topic[0] for topic in topics]  # Convert from tuples to list
 
     if request.method == 'POST':
+
         selected_topic = request.form.get('topic')
+        quiz_attempt = QuizAttempt(user_id=current_user.id)
+        quiz_attempt.starttimestamp = datetime.datetime.now()
+        quiz_attempt.tech = selected_topic
+        db.session.add(quiz_attempt)
+
+        db.session.commit()
+        db.session.flush()
+        session['quiz_attempt_id'] = quiz_attempt.id
+        print("QID ",quiz_attempt.id)
+
         return redirect(url_for('app.quiz', topic=selected_topic))
 
     return render_template('select_topic.html', topics=topics)
@@ -198,7 +198,10 @@ def submit():
         return redirect(url_for('app.select_topic'))
 
     # Create new quiz attempt
-    quiz_attempt = QuizAttempt(user_id=current_user.id)
+    # get quiz attempt 
+    qid = session['quiz_attempt_id']
+    print("QID ",qid)
+    quiz_attempt = QuizAttempt.query.get(int(qid))
     quiz_attempt.endtimestamp = datetime.datetime.now()
     db.session.add(quiz_attempt)
     db.session.flush()
@@ -254,45 +257,7 @@ def debug():
         output.append(q_dict)
     return jsonify(output)
 
-# @app_bp.route('/submit', methods=['POST'])
-# @login_required
-# def submit():
-#     # Create new quiz attempt
-#     quiz_attempt = QuizAttempt(user_id=current_user.id)
-#     quiz_attempt.starttimestamp = datetime.datetime.now()
-#     db.session.add(quiz_attempt)
-#     db.session.flush()  # Get ID before committing
 
-#     answers = request.form
-#     print("answers", answers)
-#     score = 0
-
-#     for question_id, selected_option_id in answers.items():
-#         if question_id.startswith('q_'):
-#             q_id = int(question_id.split('_')[1])
-#             opt_id = int(selected_option_id)
-
-#             # Get selected option
-#             selected_option = Option.query.get(opt_id)
-
-#             # Create response
-#             response = Response(
-#                 user_id=current_user.id,
-#                 quiz_attempt_id=quiz_attempt.id,
-#                 question_id=q_id,
-#                 selected_option_id=opt_id,
-#                 correct=selected_option.is_correct
-#             )
-
-#             if selected_option.is_correct:
-#                 score += 1
-
-#             print('resp', response)
-#             db.session.add(response)
-
-#     db.session.commit()
-#     flash(f'Quiz submitted! Score: {score}', 'success')
-#     return redirect(url_for('app.history'))
 
 @app_bp.route('/history')
 @login_required

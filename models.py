@@ -44,8 +44,9 @@ class Option(db.Model):
 class QuizAttempt(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    starttimestamp = db.Column(db.DateTime, default=datetime.datetime.now(datetime.timezone.utc))
-    endtimestamp = db.Column(db.DateTime, default=datetime.datetime.now(datetime.timezone.utc))
+    tech = db.Column(db.String(32), nullable=True)
+    starttimestamp = db.Column(db.DateTime, default=datetime.datetime.now())
+    endtimestamp = db.Column(db.DateTime, default=datetime.datetime.now())
     responses = db.relationship('Response', backref='quiz_attempt', lazy = "dynamic")
 
 class Response(db.Model):
